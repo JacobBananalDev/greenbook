@@ -1,0 +1,34 @@
+# Docker Compose file for GreenBook local development
+# This defines and runs our infrastructure dependencies (PostgreSQL)
+
+services:
+  # "db" is the service name used internally by Docker
+  # Other services (like the API) can refer to it as "db"
+  db:
+    # Official PostgreSQL image from Docker Hub
+    # We pin a major version (16) for stability and repeatability
+    image: postgres:16
+
+    # Friendly container name so we don’t get random hashes
+    container_name: greenbook-db
+
+    # Environment variables required by the Postgres image
+    # These create the database and user on first startup
+    environment:
+      POSTGRES_DB: greenbook          # Name of the database
+      POSTGRES_USER: postgres         # Database username
+      POSTGRES_PASSWORD: postgres     # Database password (dev only)
+
+    # Port mapping: HOST:CONTAINER
+    # Allows tools on your machine to connect to Postgres
+    ports:
+      - "5432:5432"
+
+    # Volume mapping to persist data between container restarts
+    volumes:
+      - greenbook_pgdata:/var/lib/postgresql/data
+
+# Named volumes live outside containers
+# This keeps your DB data even if the container is destroyed
+volumes:
+  greenbook_pgdata:
