@@ -10,6 +10,13 @@ This project is being built incrementally with a strong focus on:
 - Real-world analytics
 - Scalable backend architecture
 
+## Getting Started (Local Dev)
+
+For a step-by-step walkthrough of running GreenBook locally (Docker + PostgreSQL + EF Core migrations), see:
+
+- **Local Development Workflow:** `docs/local-development-workflow.md`
+
+
 Tech stack (planned):
 - ASP.NET Core
 - PostgreSQL
