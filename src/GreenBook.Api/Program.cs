@@ -1,6 +1,14 @@
+using GreenBook.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddDbContext<GreenBookDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("GreenBookDb")));
+
 builder.Services.AddControllers();
 
 // Swagger / OpenAPI (net8 standard)
