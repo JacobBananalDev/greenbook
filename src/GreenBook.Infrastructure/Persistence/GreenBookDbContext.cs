@@ -51,8 +51,8 @@ public class GreenBookDbContext : DbContext
         modelBuilder.Entity<Round>()
             .ToTable(t =>
             {
-                t.HasCheckConstraint("CK_rounds_holes_played", "\"holes_played\" IN (9, 18)");
-                t.HasCheckConstraint("CK_rounds_starting_hole", "\"starting_hole\" IN (1, 10)");
+                t.HasCheckConstraint("CK_rounds_holes_played", "\"HolesPlayed\" IN (9, 18)");
+                t.HasCheckConstraint("CK_rounds_starting_hole", "\"StartingHole\" IN (1, 10)");
             });
     }
 }
