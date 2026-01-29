@@ -1,4 +1,5 @@
 using GreenBook.Infrastructure.Persistence;
+using GreenBook.Infrastructure.Persistence.Seeding;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -17,7 +18,23 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+/* ===============================
+   DEV-ONLY: DB migrate + seed
+   =============================== */
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<GreenBookDbContext>();
+
+    app.Logger.LogInformation("Running DB migrate + seed...");
+
+    await db.Database.MigrateAsync();
+    await DatabaseSeeder.SeedAsync(db);
+}
+
+/* ===============================
+   HTTP request pipeline
+   =============================== */
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
