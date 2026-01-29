@@ -28,8 +28,20 @@ if (app.Environment.IsDevelopment())
 
     app.Logger.LogInformation("Running DB migrate + seed...");
 
-    await db.Database.MigrateAsync();
-    await DatabaseSeeder.SeedAsync(db);
+    for (var attempt = 1; attempt <= 5; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync();
+            await DatabaseSeeder.SeedAsync(db);
+            break;
+        }
+        catch (Exception ex) when (attempt < 5)
+        {
+            app.Logger.LogWarning(ex, "Database not ready, retrying ({Attempt}/5)...", attempt);
+            await Task.Delay(2000);
+        }
+    }
 }
 
 /* ===============================
