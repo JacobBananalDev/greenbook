@@ -115,5 +115,90 @@ namespace GreenBook.Api.Controllers
 
             return CreatedAtAction(nameof(GetById), new { id = round.Id }, dto);
         }
+
+        [HttpGet("{id:guid}/summary")]
+        public async Task<ActionResult<RoundSummaryDto>> GetSummary(Guid id, CancellationToken ct)
+        {
+            var round = await _db.Rounds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == id, ct);
+
+            if (round is null)
+                return NotFound("Round not found.");
+
+            var holes = await _db.RoundHoles
+                .AsNoTracking()
+                .Where(h => h.RoundId == id)
+                .ToListAsync(ct);
+
+            if (holes.Count == 0)
+                return Ok(new RoundSummaryDto(
+                    id,
+                    round.HolesPlayed,
+                    0,
+                    null,
+                    0,
+                    0
+                ));
+
+            var summary = new RoundSummaryDto(
+                round.Id,
+                round.HolesPlayed,
+                holes.Sum(h => h.Strokes),
+                holes.All(h => h.Putts is null) ? null : holes.Sum(h => h.Putts ?? 0),
+                holes.Count(h => h.Gir == true),
+                holes.Count(h => h.FairwayResult == "C")
+            );
+
+            return Ok(summary);
+        }
+
+        [HttpPut("{roundId:guid}/holes/{holeNumber:int}")]
+        public async Task<IActionResult> UpsertHole(
+    Guid roundId,
+    int holeNumber,
+    [FromBody] UpsertRoundHoleRequest req,
+    CancellationToken ct)
+        {
+            if (holeNumber < 1 || holeNumber > 18)
+                return BadRequest("HoleNumber must be between 1 and 18.");
+
+            var round = await _db.Rounds
+                .FirstOrDefaultAsync(r => r.Id == roundId, ct);
+
+            if (round is null)
+                return NotFound("Round not found.");
+
+            var hole = await _db.RoundHoles
+                .FirstOrDefaultAsync(h =>
+                    h.RoundId == roundId &&
+                    h.HoleNumber == holeNumber, ct);
+
+            if (hole is null)
+            {
+                hole = new RoundHole
+                {
+                    Id = Guid.NewGuid(),
+                    RoundId = roundId,
+                    HoleNumber = holeNumber,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+
+                _db.RoundHoles.Add(hole);
+            }
+
+            hole.Strokes = req.Strokes;
+            hole.Putts = req.Putts;
+            hole.Gir = req.Gir;
+            hole.FairwayResult = req.FairwayResult;
+            hole.Penalties = req.Penalties;
+            hole.SandShots = req.SandShots;
+            hole.UpAndDown = req.UpAndDown;
+
+            await _db.SaveChangesAsync(ct);
+
+            return NoContent();
+        }
+
     }
 }
