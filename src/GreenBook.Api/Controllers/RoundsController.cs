@@ -154,6 +154,53 @@ namespace GreenBook.Api.Controllers
             return Ok(summary);
         }
 
+        [HttpGet("{roundId:guid}/holes")]
+        public async Task<ActionResult<List<RoundHoleDto>>> GetHoles(Guid roundId, CancellationToken ct)
+        {
+            // 1) Load round (need TeeSetId)
+            var round = await _db.Rounds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == roundId, ct);
+
+            if (round is null)
+                return NotFound("Round not found.");
+
+            // 2) Load tee-set holes (par, yardage, handicap, etc.)
+            var courseHoles = await _db.CourseHoles
+                .AsNoTracking()
+                .Where(ch => ch.TeeSetId == round.TeeSetId)
+                .OrderBy(ch => ch.HoleNumber)
+                .ToListAsync(ct);
+
+            // 3) Load any existing scoring rows
+            var scored = await _db.RoundHoles
+                .AsNoTracking()
+                .Where(rh => rh.RoundId == roundId)
+                .ToDictionaryAsync(rh => rh.HoleNumber, ct);
+
+            // 4) Merge into a full scorecard list
+            var result = courseHoles.Select(ch =>
+            {
+                scored.TryGetValue(ch.HoleNumber, out var rh);
+
+                return new RoundHoleDto(
+                    HoleNumber: ch.HoleNumber,
+                    Par: ch.Par,
+                    Strokes: rh?.Strokes,
+                    Putts: rh?.Putts,
+                    Gir: rh?.Gir,
+                    FairwayResult: rh?.FairwayResult,
+                    Penalties: rh?.Penalties,
+                    SandShots: rh?.SandShots,
+                    UpAndDown: rh?.UpAndDown,
+                    UpdatedAtUtc: rh?.UpdatedAtUtc
+                );
+            }).ToList();
+
+            return Ok(result);
+        }
+
+
         [HttpPut("{roundId:guid}/holes/{holeNumber:int}")]
         public async Task<IActionResult> UpsertHole(
     Guid roundId,
@@ -195,6 +242,8 @@ namespace GreenBook.Api.Controllers
             hole.Penalties = req.Penalties;
             hole.SandShots = req.SandShots;
             hole.UpAndDown = req.UpAndDown;
+
+            hole.UpdatedAtUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
 
