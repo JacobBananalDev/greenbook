@@ -1,4 +1,4 @@
-﻿namespace GreenBook.Contracts.Rounds;
+﻿namespace GreenBook.Contracts.Rounds.RoundHoles;
 
 public sealed record UpsertRoundHoleRequest(
     int Strokes,
